@@ -345,7 +345,67 @@ namespace ExcelTranslationTool
                     translatedRow[sourceKey] = sourceValue;
                 }
                 
-                if (rowHasMissingTranslation)
+
+                                
+                result.Add(translatedRow);
+            }
+            
+            Console.WriteLine($"{result.Count} Zeilen übersetzt.");
+            return result;
+        }
+        
+        /// <summary>
+        /// Exportiert die übersetzten Daten in eine neue Excel-Datei
+        /// </summary>
+        static void ExportToExcel(List<Dictionary<string, string>> data, string filePath)
+        {
+            using (var package = new ExcelPackage())
+            {
+                var worksheet = package.Workbook.Worksheets.Add("Übersetzung");
+                
+                // Alle eindeutigen Spaltenüberschriften sammeln
+                var allHeaders = new HashSet<string>();
+                foreach (var row in data)
                 {
-                    missingTranslationsCount++;
-                    translatedRow["_MissingTranslation"]
+                    foreach (var key in row.Keys)
+                    {
+                        allHeaders.Add(key);
+                    }
+                }
+                
+                var headersList = new List<string>(allHeaders);
+                
+                // Überschriften in erste Zeile schreiben
+                for (int i = 0; i < headersList.Count; i++)
+                {
+                    worksheet.Cells[1, i + 1].Value = headersList[i];
+                    // Formatierung der Kopfzeile
+                    worksheet.Cells[1, i + 1].Style.Font.Bold = true;
+                }
+                
+                // Daten zeilenweise schreiben
+                for (int rowIndex = 0; rowIndex < data.Count; rowIndex++)
+                {
+                    var rowData = data[rowIndex];
+                    
+                    for (int colIndex = 0; colIndex < headersList.Count; colIndex++)
+                    {
+                        var header = headersList[colIndex];
+                        if (rowData.TryGetValue(header, out var cellValue))
+                        {
+                            worksheet.Cells[rowIndex + 2, colIndex + 1].Value = cellValue;
+                        }
+                    }
+                }
+                
+                // Autofit für bessere Lesbarkeit
+                worksheet.Cells[worksheet.Dimension.Address].AutoFitColumns();
+                
+                // Datei speichern
+                package.SaveAs(new FileInfo(filePath));
+            }
+            
+            Console.WriteLine($"Daten wurden erfolgreich nach {filePath} exportiert.");
+        }
+    }
+}
